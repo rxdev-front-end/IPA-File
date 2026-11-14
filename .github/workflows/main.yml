@@ -6,12 +6,15 @@ jobs:
   download:
     runs-on: ubuntu-latest
     steps:
-      - name: Download and install ipatool
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install ipatool
         run: |
-          wget -q https://github.com/majd/ipatool/releases/download/v2.1.1/ipatool_2.1.1_linux_amd64.tar.gz
-          tar -xzf ipatool_2.1.1_linux_amd64.tar.gz
-          chmod +x ipatool
-          sudo mv ipatool /usr/local/bin/
+          go install github.com/majd/ipatool/v2@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
 
       - name: Auth with Apple ID
         env:
