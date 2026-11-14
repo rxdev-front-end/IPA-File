@@ -1,11 +1,6 @@
 name: download-ff-ipa
 on:
   workflow_dispatch:
-    inputs:
-      auth_code:
-        description: 'Código 2FA (deixe vazio na primeira vez)'
-        required: false
-        default: ''
 
 jobs:
   download:
@@ -25,18 +20,9 @@ jobs:
         env:
           APPLE_EMAIL: ${{ secrets.APPLE_EMAIL }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          AUTH_CODE: ${{ github.event.inputs.auth_code }}
         run: |
-          if [ -z "$AUTH_CODE" ]; then
-            echo ">>> Mandando o código pro teu iPhone..."
-            ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD" --keychain-passphrase "ollie" || true
-            echo ">>> AÇÃO NECESSÁRIA: Olha teu iPhone, pega o código de 6 dígitos."
-            echo ">>> Depois, clica em Run workflow DE NOVO, colando o código no campo."
-            exit 1
-          else
-            echo ">>> Logando com o código $AUTH_CODE..."
-            ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD" --auth-code "$AUTH_CODE" --keychain-passphrase "ollie"
-          fi
+          echo ">>> Logando com senha de app..."
+          ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD" --keychain-passphrase "ollie"
 
       - name: Download Free Fire IPA
         run: |
