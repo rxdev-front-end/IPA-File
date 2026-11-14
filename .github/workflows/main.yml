@@ -1,11 +1,26 @@
 name: download-ff-ipa
 on:
   workflow_dispatch:
+    inputs:
+      auth_code:
+        description: 'Código 2FA (deixe vazio na primeira vez)'
+        required: false
+        default: ''
 
 jobs:
   download:
     runs-on: ubuntu-latest
     steps:
+      - name: Restore ipatool session (Cache)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.config/ipatool
+            ~/.local/share/keyrings
+          key: ipatool-cache-${{ github.run_id }}
+          restore-keys: |
+            ipatool-cache-
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -20,16 +35,38 @@ jobs:
         env:
           APPLE_EMAIL: ${{ secrets.APPLE_EMAIL }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          AUTH_CODE: ${{ github.event.inputs.auth_code }}
         run: |
-          echo ">>> Logando com senha de app..."
-          ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD" --keychain-passphrase "ollie"
+          if [ -z "$AUTH_CODE" ]; then
+            echo ">>> 1ª ETAPA: Mandando o código pro iPhone..."
+            # O < /dev/null impede que o terminal trave esperando tu digitar
+            ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD" --keychain-passphrase "ollie" < /dev/null || true
+            echo ">>> CÓDIGO ENVIADO! Olha no seu iPhone."
+            echo ">>> Agora, clica em Run workflow de novo e cola o código no campo."
+            exit 1
+          else
+            echo ">>> 2ª ETAPA: Autenticando com o código $AUTH_CODE..."
+            # O cache restaurou a sessão. Agora ele aceita o código.
+            ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD" --auth-code "$AUTH_CODE" --keychain-passphrase "ollie"
+          fi
+
+      - name: Save ipatool session (Cache)
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            ~/.config/ipatool
+            ~/.local/share/keyrings
+          key: ipatool-cache-${{ github.run_id }}
 
       - name: Download Free Fire IPA
+        if: github.event.inputs.auth_code != ''
         run: |
           mkdir -p ipa
           ipatool download -b com.dts.freefireth -o ipa/FreeFire.ipa --keychain-passphrase "ollie"
 
       - name: Upload IPA
+        if: github.event.inputs.auth_code != ''
         uses: actions/upload-artifact@v4
         with:
           name: freefire-original-ipa
