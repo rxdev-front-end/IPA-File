@@ -1,0 +1,30 @@
+name: download-ff-ipa
+on:
+  workflow_dispatch:
+
+jobs:
+  download:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ipatool
+        run: brew install ipatool
+
+      - name: Auth with Apple ID
+        env:
+          APPLE_EMAIL: ${{ secrets.APPLE_EMAIL }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          ipatool auth login -e "$APPLE_EMAIL" -p "$APPLE_PASSWORD"
+
+      - name: Download Free Fire IPA
+        run: |
+          mkdir -p ipa
+          ipatool download -b com.dts.freefireth -o ipa/FreeFire.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: freefire-original-ipa
+          path: ipa/FreeFire.ipa
