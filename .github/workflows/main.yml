@@ -4,10 +4,14 @@ on:
 
 jobs:
   download:
-    runs-on: macos-14
+    runs-on: ubuntu-latest
     steps:
-      - name: Install ipatool
-        run: brew install ipatool
+      - name: Download and install ipatool
+        run: |
+          wget -q https://github.com/majd/ipatool/releases/download/v2.1.1/ipatool_2.1.1_linux_amd64.tar.gz
+          tar -xzf ipatool_2.1.1_linux_amd64.tar.gz
+          chmod +x ipatool
+          sudo mv ipatool /usr/local/bin/
 
       - name: Auth with Apple ID
         env:
